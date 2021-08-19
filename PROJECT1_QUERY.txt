@@ -1,0 +1,249 @@
+						                   PROJECT_1
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+							   HiveQL
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Upload the data into HDFS
+Create tables in HIVE from the uploaded data
+Write HIVE queries to get the following results:
+---------------------------------------------------------
+create database project1;
+create database if not exists project1 with dbproperties ("creater"="shetu das","purpose"="project1","data-of-creation"="4th-august-2021");
+desc database extended project1;
+
+
+hdfs dfs -mkdir /project1
+
+under hive_------------
+
+CREATE TABLE movie (MovieID int, Title string, Genres string)
+row format delimited
+fields terminated by ',';
+
+
+CREATE TABLE ratings (userid int, movieid int, rating float ,timstmp int)
+row format delimited
+fields terminated by ',';
+
+
+CREATE TABLE tags (userid int, movieid int, tag string, timstmp int)
+row format delimited
+fields terminated by ',';
+
+
+
+CREATE TABLE links (MovieID int, imdbid int, tmdbid int)
+row format delimited
+fields terminated by ',';
+-------------------------------
+-------------------------------
+create table mixup(movieid int,title string,genres string,userid int,rating float,timstmp int,tag string, imdbid int,tmdbid int)
+row format delimited
+fields terminated by ',';
+
+-------
+LOAD DATA INPATH '/project1'
+INTO TABLE project1.mixup;
+-------------------------------
+-------------------------------------------------------
+
+
+LOAD DATA INPATH '/project1/movies.csv'
+INTO TABLE project1.movie;
+
+LOAD DATA INPATH '/project1/ratings.csv'
+INTO TABLE project1.ratings;
+
+LOAD DATA INPATH '/project1/tags.csv'
+INTO TABLE project1.tags;
+
+LOAD DATA INPATH '/project1/links.csv'
+INTO TABLE project1.links;
+-----------------------------------------------------
+--------------------------------------------------------------------------------
+				Schema of csv files
+--------------------------------------------------------------------------------
+movies= userid, movieid, rating, timestmp
+tags= userid, movieid , tag, timstmp
+ratings= movieid , title, genres
+links= movieid,imdbid , tmdbid
+--------------------------------------------------------------------------------
+Database : project1
+Tables:  movie
+	 tags
+	 ratings
+	 links
+--------------------------------------------------------------------------------
+				  Hive-Queries
+--------------------------------------------------------------------------------
+
+01. first 5 entries from movies table
+
+->SELECT * from movie LIMIT 5;
+
+--------------------------------------------------------------------------------
+
+02. number of unique movies
+
+-> SELECT count(DISTINCT(title)) from movie;
+
+--------------------------------------------------------------------------------
+
+03. summary of ratings data
+->DESC ratings;
+SELECT AVG(rating) as avg_rating , MAX(rating)  as max_rating, COUNT(rating) as no_of_rating from ratings;
+
+--------------------------------------------------------------------------------
+
+04. minimum rating given to a movie
+
+->SELECT max(rt.rating) , mv.title from movie as mv inner join ratings as rt on mv.movieid=rt.movieid group by rating,title limit 5;
+
+--------------------------------------------------------------------------------
+
+05. maximum rating given to a movie
+
+->SELECT max(rt.rating) , mv.title from movie as mv inner join ratings as rt on mv.movieid=rt.movieid group by rating,title limit 5;
+
+--------------------------------------------------------------------------------
+
+06. is any row null in tags
+
+-> select * from tags where movieid=null and userid=null and tag=null and timstmp=null;
+
+
+-> SELECT userid, movieid,tag,timstmp from tags 
+where userid IS  NULL
+and movieid IS NULL
+and tag IS  NULL 
+and timstmp IS NULL;
+
+
+
+--------------------------------------------------------------------------------
+
+07. number of unique tags 
+-> SELECT count(distinct(tag)) from tags;
+
+--------------------------------------------------------------------------------
+08. drop null rows from tags and create another table of the resulting rows
+
+-> CREATE table notnull_tags as 
+select * from tags 
+where userid is not null
+and movieid is not null
+and tag is not null 
+and timstmp is not null; 
+--------------------------------------------------------------------------------
+
+09. filtering to get the list of drama movies
+
+-> SELECT * from movie where genres RLIKE 'Drama' limit 20;
+--------------------------------------------------------------------------------
+10. total number of drama movies
+
+-> SELECT count(*) from movie where genres RLIKE 'Drama';
+--------------------------------------------------------------------------------
+11. filtering to get the list of comedy movies
+
+->SELECT * from movie where genres RLIKE 'Comedy' limit 20;
+--------------------------------------------------------------------------------
+12. total no. of comedy movies
+->SELECT count(*) from movie where genres RLIKE 'Comedy';
+--------------------------------------------------------------------------------
+13. search movie id by tag search
+
+
+->select movieid ,tag from tags where tag="dark hero" limit 5;
+-> select movieid ,tag from tags limit 5;
+--------------------------------------------------------------------------------
+14. displays first 5 data from ratings table
+
+->SELECT * from ratings limit 5;
+--------------------------------------------------------------------------------
+15. merging two tables movies and ratings into a new table without the "timestamp" column from the ratings table.
+
+->CREATE table movie_ratings as
+SELECT mv.movieid, mv.title , mv.genres , rt.rating, rt.userid 
+from movie as mv, ratings as rt where mv.movieid=rt.movieid;
+
+
+show tables
+desc movie_ratings
+--------------------------------------------------------------------------------
+16. display high rated movies (rating > 4)
+
+-> SELECT rt.rating, mv.title 
+from movie as mv 
+inner join ratings as rt
+on mv.movieid = rt.movieid 
+where rt.rating>4.0 limit 10;
+
+
+-> SELECT rt.rating, mv.title from movie as mv inner join ratings as rt on mv.movieid = rt.movieid 
+where rt.rating in (select rating from ratings where rating>4.0) group by title, rating;
+
+->  select rating from ratings where rating>4.0 limit 10;
+
+
+--------------------------------------------------------------------------------
+17. display low rated movies (rating < 4.0)
+
+-> SELECT rt.rating, mv.title 
+from movie as mv 
+inner join ratings as rt
+on mv.movieid = rt.movieid 
+where rt.rating<4.0  limit 10;
+
+-> select rt.rating, mv.title from movie as mv inner join ratings as rt on mv.movieid = rt.movieid 
+where rt.rating in (select rating from ratings where rating<4.0) group by title, rating;
+
+->SELECT rating from ratings where (select COUNT(rating) from ratings)<4.0 ;
+
+--------------------------------------------------------------------------------
+18. total number of unique movie genres
+
+-> SELECT count(distinct(genres)) from movies;
+--------------------------------------------------------------------------------
+
+19. top 25 most rated movies
+-> SELECT rt.rating, mv.title from movie as mv inner join ratings as rt on mv.movieid = rt.movieid 
+order by rating desc limit 25;
+--------------------------------------------------------------------------------
+
+20. slicing out columns to display only title and genres columns from movies table
+
+-> SELECT title , genres from movie;
+--------------------------------------------------------------------------------
+21. extract year from title of the movie
+->
+--------------------------------------------------------------------------------
+
+22. count how many times each of genres occur
+
+-> SELECT mv.genres , count(genres) from movie mv group by mv.genres;
+--------------------------------------------------------------------------------
+
+
+23. Which movie received the highest number of ratings? #
+
+-> SELECT mv.title , count(rt.rating) as no_of_ratings from movie as mv
+ inner join ratings as rt on mv.movieid= rt.movieid group by title order by no_of_ratings  desc limit 5;
+
+----------------------------------------------------------------------------------
+------------------ ---------------partitions--------------------------------------
+-----------------------------------------------------------------------------------
+
+->create external table movie_partition_for_genres (title string comment "Title" ,movieid int comment "Movie ID" )
+partitioned by (genres string) 
+row format delimited
+fields terminated by ','
+location '/project1/';
+
+load data inpath '/project1/movies.csv' into table movie_partition_for_genres partition(genres='Drama');
+----------------------------------------------------------------------------------
+
+show partitions movie_partition_for_genres ;
+---------------------------------------------------------------------------------
