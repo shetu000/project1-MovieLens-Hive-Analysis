@@ -16,7 +16,7 @@ analyzed the data using some aggregations like filtering and bucketing
  2.Maximum rating given to a movie
 ## Getting Started
 * To start this project user need to install Hortonworks-sandbox in Virtual Machine.Connect to Vm through Git Bash using SSH command "ssh maria_dev@sandbox-hdp.hortonworks.com -p 2222" after that user need to give the password by default it is maria_dev 
-* git clone https://github.com/sweety15/project1.git by using this we can pull the dataset 
+* git clone https://github.com/shetu000/project1-MovieLens-Hive-Analysis.git by using this we can pull the dataset 
 * create a directory in hdfs(project1) and in that create three folders(movies,ratings,tags) using command hdfs dfs -mkdir /user/maria_dev/project1
 * Later load the 3 datafile in the 3 specific folders hdfs dfs -put movies.csv /user/maria_dev/project1/movies
 * create database database_name;
